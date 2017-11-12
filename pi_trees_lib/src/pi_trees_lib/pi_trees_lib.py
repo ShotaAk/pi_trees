@@ -161,6 +161,9 @@ class Sequence(Task):
             
         for c in self.children:
             
+            if c.status == TaskStatus.SUCCESS:
+                continue
+
             c.status = c.run()
                          
             if c.status != TaskStatus.SUCCESS:
