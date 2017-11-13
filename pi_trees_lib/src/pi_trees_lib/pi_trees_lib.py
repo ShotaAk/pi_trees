@@ -381,42 +381,39 @@ class ParallelOne(Task):
     """
     def __init__(self, name, *args, **kwargs):
         super(ParallelOne, self).__init__(name, *args, **kwargs)
-        
-        self.failure = dict()
-        self.index = 0
+
+        self.num_failure = 0
                  
+
     def run(self):
         n_children = len(self.children)
 
-        if self.index < n_children:
-            child = self.children[self.index]
-            child.status = child.run()
-            
-            if child.status != TaskStatus.SUCCESS:
-                self.index += 1
-                
-                if child.status == TaskStatus.FAILURE:
-                    self.failure[child.name] = TaskStatus.FAILURE
-                    
-                return TaskStatus.RUNNING
-            else:
+        for c in self.children:
+            if c.status == TaskStatus.FAILURE:
+                continue
+
+            c.status = c.run()
+
+            if c.status == TaskStatus.SUCCESS:
                 if self.reset_after:
                     self.reset()
-                    self.index = 0
                 return TaskStatus.SUCCESS
 
-        elif len(self.failure) == n_children:
+            if c.status == TaskStatus.FAILURE:
+                self.num_failure += 1
+
+        if self.num_failure == n_children:
             if self.reset_after:
                 self.reset()
             return TaskStatus.FAILURE
         else:
-            self.index = 0
             return TaskStatus.RUNNING
+
         
     def reset(self):
         super(ParallelOne, self).reset()
-        self.failure = dict()
-        self.index = 0
+        self.num_failure = 0
+
         
 class ParallelAll(Task):
     """
@@ -425,41 +422,39 @@ class ParallelAll(Task):
     """
     def __init__(self, name, *args, **kwargs):
         super(ParallelAll, self).__init__(name, *args, **kwargs)
-        
-        self.success = dict()
-        self.index = 0
+
+        self.num_success = 0
+
                  
     def run(self):
         n_children = len(self.children)
         
-        if self.index < n_children:
-            child = self.children[self.index]
-            child.status = child.run()
-        
-            if child.status != TaskStatus.FAILURE:
-                self.index += 1
-                
-                if child.status == TaskStatus.SUCCESS:
-                    self.success[child.name] = TaskStatus.SUCCESS
-                    
-                return TaskStatus.RUNNING
-            else:
+        for c in self.children:
+            if c.status == TaskStatus.SUCCESS:
+                continue
+
+            c.status = c.run()
+
+            if c.status == TaskStatus.FAILURE:
                 if self.reset_after:
                     self.reset()
                 return TaskStatus.FAILURE
 
-        elif len(self.success) == n_children:
+            if c.status == TaskStatus:
+                self.num_success += 1
+
+        if self.num_success == n_children:
             if self.reset_after:
                 self.reset()
             return TaskStatus.SUCCESS
         else:
-            self.index = 0
             return TaskStatus.RUNNING
         
+
     def reset(self):
         super(ParallelAll, self).reset()
-        self.success = dict()
-        self.index = 0
+        self.num_success = 0
+
         
 class Loop(Task):
     """
