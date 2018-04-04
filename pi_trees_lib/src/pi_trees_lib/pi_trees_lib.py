@@ -130,6 +130,7 @@ class Sequence(Task):
         status is returned.  If a subtask is still RUNNING, then a RUNNING
         status is returned and processing continues until either SUCCESS
         or FAILURE is returned from the subtask.
+        A subtree that returned succeed is never executed again.
     """
     def __init__(self, name, *args, **kwargs):
         super(Sequence, self).__init__(name, *args, **kwargs)
@@ -157,6 +158,37 @@ class Sequence(Task):
         
         return TaskStatus.SUCCESS
     
+class MemorylessSequence(Task):
+    """
+        A sequence runs each task in order until one fails,
+        at which point it returns FAILURE. If all tasks succeed, a SUCCESS
+        status is returned.  If a subtask is still RUNNING, then a RUNNING
+        status is returned and processing continues until either SUCCESS
+        or FAILURE is returned from the subtask.
+    """
+    def __init__(self, name, *args, **kwargs):
+        super(Sequence, self).__init__(name, *args, **kwargs)
+ 
+    def run(self):
+        if self._announce:
+            self.announce()
+            
+        for c in self.children:
+
+            c.status = c.run()
+                         
+            if c.status != TaskStatus.SUCCESS:
+                if c.status == TaskStatus.FAILURE:
+                    if self.reset_after:
+                        self.reset()
+                        return TaskStatus.FAILURE
+                return c.status   
+        
+        if self.reset_after:
+            self.reset()
+        
+        return TaskStatus.SUCCESS
+
 class RandomSelector(Task):
     """ A selector runs each task in random order until one succeeds,
         at which point it returns SUCCESS. If all tasks fail, a FAILURE
