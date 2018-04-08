@@ -167,7 +167,7 @@ class MemorylessSequence(Task):
         or FAILURE is returned from the subtask.
     """
     def __init__(self, name, *args, **kwargs):
-        super(Sequence, self).__init__(name, *args, **kwargs)
+        super(MemorylessSequence, self).__init__(name, *args, **kwargs)
  
     def run(self):
         if self._announce:
